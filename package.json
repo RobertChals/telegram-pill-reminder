@@ -1,0 +1,19 @@
+{
+  "name": "telegram-pill-reminder",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "moment": "^2.19.2",
+    "mongoose": "^4.13.3",
+    "node-schedule": "^1.2.5",
+    "node-telegram-bot-api": "^0.26.0",
+    "request": "^2.83.0"
+  }
+}
