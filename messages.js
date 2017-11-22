@@ -1,4 +1,4 @@
-let messages = {};
+const messages = {};
 module.exports = messages;
 
 messages.pillMessages = ["💊💊💊", "🕖💊", "💊🕗", "🕘💊", "📢💊", "💊📣", "💊🆘"];
@@ -13,7 +13,7 @@ messages.startLocation = `
 Start by sending me your location, so I know which time zone you are in.
 `;
 
-messages.tellUserNewLocation = "I see your time zone location is ";
+messages.tellUserNewLocation = "I set your time zone location to ";
 messages.tellUserKnownLocation = "You told me you are here: ";
 
 // help
@@ -57,3 +57,4 @@ messages.errorUserHasNoTimes = "I don't have any reminder times saved for you. W
 messages.errorTimeNotRecognized = "I don't recognize that as a time.";
 messages.errorLocationNeeded = "I still need your location to set your correct time zone.";
 messages.errorInvalidLocation = "I don't know where that is... Wanna try again?";
+messages.errorNoLocationAsk = "I don't have your location yet. Do you want to tell me?";

@@ -1,19 +1,21 @@
-let mongo = require('./mongo');
-let bot = require('./bot');
-let moment = require('moment');
-let schedule = require('./schedule');
-let timezone = require('./timezone');
-let messages = require('./messages');
+const bot = require('./bot');
+const mongo = require('./mongo');
+const moment = require('moment');
+const timezone = require('./timezone');
+const messages = require('./messages');
+
+const { initScheduler } = require('./schedule');
+initScheduler();
 
 // add time
-bot.myBot.onText(/^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/i, function (msg) {
+bot.onText(/^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/i, (msg) => {
     let chatId = msg.chat.id;
-    getTZidentifier(chatId, function (result) {
+    getTZidentifier(chatId, async (result) => {
         if (result === null) {
             let replyMarkup = {reply_markup: JSON.stringify({
                 keyboard : [[{text: messages.sendMyLoc, request_location: true}]]
             })};
-            bot.myBot.sendMessage(chatId, messages.errorLocationNeeded +
+            await bot.sendMessage(chatId, messages.errorLocationNeeded +
                 "Then tell me your time again.", replyMarkup);
         } else {
             let timeEntered = msg.text;
@@ -30,30 +32,30 @@ bot.myBot.onText(/^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/i, function (msg) {
                     {$push: {"userIDs":{
                         _id: chatId
                     }}},
-                    function (err, numAffected) {
+                    async (err, numAffected) => {
                         if (err) {console.log(err)}
                         else {
                             if (numAffected.n !== 0)
-                                bot.myBot.sendMessage(chatId, messages.successAdded + timeEntered);
+                                await bot.sendMessage(chatId, messages.successAdded + timeEntered);
                             else {
-                                bot.myBot.sendMessage(chatId, messages.hintTimeKnown)
+                                await bot.sendMessage(chatId, messages.hintTimeKnown)
                             }
                         }
                     }
                 )
             } else {
-                bot.myBot.sendMessage(chatId, messages.errorTimeNotRecognized);
+                await bot.sendMessage(chatId, messages.errorTimeNotRecognized);
             }
         }
     })
 });
 
 //times
-bot.myBot.onText(/^\/times$/i, function (msg) {
+bot.onText(/^\/times$/i, (msg) => {
     let chatId = msg.chat.id;
-    getUserTimes(chatId, function (results) {
+    getUserTimes(chatId, async (results) => {
         if (results !== null) {
-            bot.myBot.sendMessage(chatId,
+            await bot.sendMessage(chatId,
                 messages.hintWillRemind +
                 results.join('\n') +
                 messages.hintAddOrDeleteTimes
@@ -63,77 +65,76 @@ bot.myBot.onText(/^\/times$/i, function (msg) {
 });
 
 // start
-bot.myBot.onText(/^\/start$/i, function (msg) {
-    saveOrUpdateUserToDb(msg, function () {
+bot.onText(/^\/start$/i, (msg) => {
+    saveOrUpdateUserToDb(msg, async () => {
         let chatId = msg.chat.id;
         let firstName = msg.from.first_name;
         let welcomeMessage = "Welcome " + firstName + "!" + messages.startLocation;
         let replyMarkup = {reply_markup: JSON.stringify({
             keyboard : [[{text: messages.sendMyLoc, request_location: true}]]
         })};
-        bot.myBot.sendMessage(chatId, welcomeMessage, replyMarkup);
+        await bot.sendMessage(chatId, welcomeMessage, replyMarkup);
     })
 });
 
 // help
-bot.myBot.onText(/\/help/i, function (msg) {
+bot.onText(/\/help/i, async (msg) => {
     let chatId = msg.chat.id;
-    bot.myBot.sendMessage(chatId, messages.generalMessage + messages.helpMessage);
+    await bot.sendMessage(chatId, messages.generalMessage + messages.helpMessage);
 });
 
 // settings
-bot.myBot.onText(/\/settings/i, function (msg) {
+bot.onText(/\/settings/i, async (msg) => {
     let chatId = msg.chat.id;
-    bot.myBot.sendMessage(chatId, messages.helpMessage);
+    await bot.sendMessage(chatId, messages.helpMessage);
 });
 
 // ping
-bot.myBot.onText(/^(\/)?ping$/i, function (msg) {
+bot.onText(/^(\/)?ping$/i, async (msg) => {
     let chatId = msg.chat.id;
-    bot.myBot.sendMessage(chatId, "pong");
+    await bot.sendMessage(chatId, "pong");
 });
 
 // hallo
-bot.myBot.onText(/^hi|h([ae])llo|hey|hola|seas|servus */i, function (msg) {
+bot.onText(/^hi|h([ae])llo|hey|hola|seas|servus */i, async (msg) => {
     let chatId = msg.chat.id;
     let firstName = msg.from.first_name;
-    bot.myBot.sendMessage(chatId, "Hello " + firstName + "!");
+    await bot.sendMessage(chatId, "Hello " + firstName + "!");
 });
 
 // add
-bot.myBot.onText(/^\/add$/i, function (msg) {
+bot.onText(/^\/add$/i, (msg) => {
     let chatId = msg.chat.id;
-    getTZidentifier(chatId, function (result) {
+    getTZidentifier(chatId, async (result) => {
         if (result === null) {
             let replyMarkup = {reply_markup: JSON.stringify({
                 keyboard : [[{text: messages.sendMyLoc, request_location: true}]]
             })};
-            bot.myBot.sendMessage(chatId, messages.errorLocationNeeded, replyMarkup);
+            await bot.sendMessage(chatId, messages.errorLocationNeeded, replyMarkup);
         } else {
-            bot.myBot.sendMessage(chatId, messages.hintExamples);
+            await bot.sendMessage(chatId, messages.hintExamples);
         }
     })
 });
 
 // remove
-bot.myBot.onText(/^\/remove$/i, function (msg) {
+bot.onText(/^\/remove$/i, (msg) => {
     let chatId = msg.chat.id;
-    getUserTimes(chatId, function (results) {
+    getUserTimes(chatId, async (results) => {
         if (results !== null) {
-            results.forEach(function (string, index) {
+            results.forEach((string, index) => {
                 results[index] = "✘ " + string;
             });
             let replyMarkup = {reply_markup: JSON.stringify({
                 keyboard : [results]
             })};
-
-            bot.myBot.sendMessage(chatId, messages.whatTimeToRemove, replyMarkup);
+            await bot.sendMessage(chatId, messages.whatTimeToRemove, replyMarkup);
         }
     })
 });
 
 // remove timeslot
-bot.myBot.onText(/^✘ ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/i, function (msg) {
+bot.onText(/^✘ ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/i, (msg) => {
     let chatId = msg.chat.id;
     let replyRemove = {reply_markup: JSON.stringify({
         remove_keyboard : true,
@@ -143,7 +144,7 @@ bot.myBot.onText(/^✘ ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/i, function (msg
     let timeEntered = strArr[1];
     let time = moment(timeEntered, "HH:mm");
     if (time.isValid()) {
-        mongo.User.findOne({'_id': chatId}, function (err, result) {
+        mongo.User.findOne({'_id': chatId}, (err, result) => {
             if (err) console.log(err);
             else {
                 let tzIdent = result.tzIdentifier;
@@ -158,21 +159,22 @@ bot.myBot.onText(/^✘ ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/i, function (msg
                     // see if exists, only then pull from array
                     mongo.Timeslot.findOne(
                         {"_id": timeIndex, "userIDs._id": chatId},
-                        function (err, result) {
+                        async (err, result) => {
                             if (result !== null) {
                                 mongo.Timeslot.updateOne(
                                     {_id: timeIndex},
                                     {$pull: {userIDs: {_id: chatId}}},
-                                    function (err, numAffected) {
+
+                                    async (err, numAffected) => {
                                         // for some reason numAffected returns 1 even if no element is affected
-                                        if (err) console.log(err);
+                                        if (err) console.log(err + '\n' + numAffected);
                                         else {
-                                            bot.myBot.sendMessage(chatId, messages.successRemoved + timeEntered,
+                                            await bot.sendMessage(chatId, messages.successRemoved + timeEntered,
                                                 replyRemove);
                                         }
                                     });
                             } else {
-                                bot.myBot.sendMessage(chatId, messages.errorDeletingTimeEntry, replyRemove)
+                                await bot.sendMessage(chatId, messages.errorDeletingTimeEntry, replyRemove)
                             }
                         }
                     )
@@ -182,14 +184,14 @@ bot.myBot.onText(/^✘ ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/i, function (msg
     }
 });
 
-bot.myBot.on('location', (msg) => {
+bot.on('location', async (msg) => {
     let chatId = msg.chat.id;
     let replyRemove = {reply_markup: JSON.stringify({
         remove_keyboard : true,
         selective: true
     })};
 
-    bot.myBot.sendChatAction(chatId, "find_location");
+    await bot.sendChatAction(chatId, "find_location");
 
     let loc = {
         longitude: msg.location.longitude,
@@ -198,30 +200,30 @@ bot.myBot.on('location', (msg) => {
 
     // first time user in onboard process
     let firstTimeUser = false;
-    getTZidentifier(chatId, function (result) {
+    getTZidentifier(chatId, (result) => {
         if (result === null) {firstTimeUser = true}
     });
 
     // Google Time Zone API Call
-    timezone.googleGetTZidentifier(loc, function(tzIdent) {
+    timezone.googleGetTZidentifier(loc, async (tzIdent) => {
         if (tzIdent !== undefined) {
             mongo.User.findByIdAndUpdate(
                 chatId,
                 {$set: {location: loc, tzIdentifier: tzIdent}},
                 {new: true},
-                function(err, model) {
-                    if (err) console.log(err);
+                (err, model) => {
+                    if (err) console.log(err + '\n' + model);
                 }
             );
 
-            bot.myBot.sendMessage(chatId, messages.tellUserNewLocation + tzIdent, replyRemove);
+            await bot.sendMessage(chatId, messages.tellUserNewLocation + tzIdent, replyRemove);
             if (firstTimeUser) {
-                bot.myBot.sendMessage(chatId, messages.onboardingSuccess +
+                await bot.sendMessage(chatId, messages.onboardingSuccess +
                     messages.helpMessage + messages.helpAgainMessage, replyRemove);
             }
 
         } else {
-            bot.myBot.sendMessage(chatId, messages.errorInvalidLocation);
+            await bot.sendMessage(chatId, messages.errorInvalidLocation);
         }
 
         // TODO: shift all user's times to new offset if user updates his location
@@ -230,69 +232,69 @@ bot.myBot.on('location', (msg) => {
 });
 
 // string location
-bot.myBot.onText(/^\/location$/i, function (msg) {
+bot.onText(/^\/location$/i, (msg) => {
     let chatId = msg.chat.id;
-    getTZidentifier(chatId, function (tzIdent) {
+    getTZidentifier(chatId, async (tzIdent) => {
         if (tzIdent !== null) {
-            bot.myBot.sendMessage(chatId, messages.tellUserKnownLocation + tzIdent.tzIdentifier);
+            await bot.sendMessage(chatId, messages.tellUserKnownLocation + tzIdent.tzIdentifier);
         } else {
             let replyMarkup = {reply_markup: JSON.stringify({
                 keyboard : [[{text: messages.sendMyLoc, request_location: true}]]
             })};
-            bot.myBot.sendMessage(chatId, "I don't have your location yet. Do you want to tell me?", replyMarkup);
+            await bot.sendMessage(chatId, messages.errorNoLocationAsk, replyMarkup);
         }
     })
 });
 
 // thank you
-bot.myBot.onText(/^(danke|thank you|thank(')?s)/i, function (msg) {
+bot.onText(/^(danke|thank you|thank(')?s)/i, async (msg) => {
     let chatId = msg.chat.id;
-    bot.myBot.sendMessage(chatId, "You are very welcome!");
+    await bot.sendMessage(chatId, "You are very welcome!");
 });
 
 // I love you
-bot.myBot.onText(/^(ich liebe dich|I love you)/i, function (msg) {
+bot.onText(/^(ich liebe dich|I love you)/i, async (msg) => {
     let chatId = msg.chat.id;
-    bot.myBot.sendMessage(chatId, "I love you too!");
+    await bot.sendMessage(chatId, "I love you too!");
 });
 
 // cursing
-bot.myBot.onText(/^(you|du|he(y)?)?( )?(ass(hole)?|arsch(loch)?|idiot|trott(e)?l|fuck you|cunt)/i, function (msg) {
+bot.onText(/^(you|du|he(y)?)?( )?(ass(hole)?|arsch(loch)?|idiot|trott(e)?l|fuck you|cunt)/i, async (msg) => {
     let chatId = msg.chat.id;
-    bot.myBot.sendMessage(chatId, "Well fuck you too 😃");
+    await bot.sendMessage(chatId, "Well fuck you too 😃");
 });
 
 // how are you
-bot.myBot.onText(/^(how are you|wie geht(')?s)/i, function (msg) {
+bot.onText(/^(how are you|wie geht(')?s)/i, async (msg) => {
     let chatId = msg.chat.id;
-    bot.myBot.sendMessage(chatId, "I'm ticking, how are you?");
+    await bot.sendMessage(chatId, "I'm ticking, how are you?");
 });
 
 // good
-bot.myBot.onText(/good|bad|alright|gut|schlecht/i, function (msg) {
+bot.onText(/good|bad|alright|gut|schlecht/i, async (msg) => {
     let chatId = msg.chat.id;
-    bot.myBot.sendMessage(chatId, "I really don't care.");
+    await bot.sendMessage(chatId, "I really don't care.");
 });
 
 // who am i
-bot.myBot.onText(/^(who am i|wer bin ich)/i, function (msg) {
+bot.onText(/^(who am i|wer bin ich)/i, async (msg) => {
     let chatId = msg.chat.id;
-    bot.myBot.sendMessage(chatId, "You are " + msg.chat.first_name + ".");
+    await bot.sendMessage(chatId, "You are " + msg.chat.first_name + ".");
 });
 
 // who are you
-bot.myBot.onText(/^((who|what) are you|(wer|was) bist du)/i, function (msg) {
+bot.onText(/^((who|what) are you|(wer|was) bist du)/i, async (msg) => {
     let chatId = msg.chat.id;
-    bot.myBot.sendMessage(chatId, "I am Pill Reminder, a bot that tells you when to take your next pill.");
+    await bot.sendMessage(chatId, "I am Pill Reminder, a bot that tells you when to take your next pill.");
 });
 
 // time
-bot.myBot.onText(/zeit|time$|wie spät ist es|wie viel uhr ist es|(what(')?s|what is) the time/i, function (msg) {
+bot.onText(/zeit|time$|wie spät ist es|wie viel uhr ist es|(what(')?s|what is) the time/i, async (msg) => {
     let chatId = msg.chat.id;
-    bot.myBot.sendMessage(chatId, "time");
+    await bot.sendMessage(chatId, "time");
 });
 
-saveOrUpdateUserToDb = function (msg, callback) {
+saveOrUpdateUserToDb = (msg, callback) => {
     mongo.User.findOneAndUpdate(
         {_id: msg.chat.id},
         {
@@ -301,36 +303,36 @@ saveOrUpdateUserToDb = function (msg, callback) {
             "name.userName": msg.chat.username
         },
         {"upsert": true},
-        function (err, data) {
-            if (err) console.log(err);
-            return callback();
+        (err, data) => {
+            if (err) console.log(err + '\n' + data);
+            callback();
         }
     )
 };
 
-getTZidentifier = function (chatId, callback) {
-    mongo.User.findOne({'_id': chatId, 'tzIdentifier': {$ne: null}}, function (err, result) {
+getTZidentifier = (chatId, callback) => {
+    mongo.User.findOne({'_id': chatId, 'tzIdentifier': {$ne: null}}, (err, result) => {
         if (err) {console.log(err)}
-        return callback(result);
+        callback(result);
     })
 };
 
-getUserTimes = function(chatId, callback) {
-    mongo.User.findOne({'_id': chatId}, function (err, result) {
+getUserTimes = (chatId, callback) => {
+    mongo.User.findOne({'_id': chatId}, async (err, result) => {
         if (err) console.log(err);
         else {
             if (result.tzIdentifier === null) {
-                bot.myBot.sendMessage(chatId, messages.errorUserHasNoTimes);
+                await bot.sendMessage(chatId, messages.errorUserHasNoTimes);
             } else {
                 let tzIdent = result.tzIdentifier;
                 let userOffset = timezone.getOffset(tzIdent);
                 mongo.Timeslot.find(
                     {'userIDs._id': chatId},
-                    function (err, result) {
+                    async (err, result) => {
                         if (err) {console.log(err)}
                         else {
                             let results = [];
-                            result.forEach(function (resultObj) {
+                            result.forEach((resultObj) => {
                                 let tIndex = resultObj._id;
                                 let zuluTime = (Math.floor(tIndex/60)) + ":" + (tIndex % 60);
                                 let userTime = moment(zuluTime, "HH:mm");
@@ -339,9 +341,9 @@ getUserTimes = function(chatId, callback) {
                             });
                             results.sort();
                             if (results.length > 0) {
-                                return callback(results);
+                                callback(results);
                             } else {
-                                bot.myBot.sendMessage(chatId, messages.errorUserHasNoTimes);
+                                await bot.sendMessage(chatId, messages.errorUserHasNoTimes);
                             }
                         }
                     }

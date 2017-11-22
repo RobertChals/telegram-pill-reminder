@@ -1,16 +1,16 @@
-let request = require('request');
-let momentTZ = require('moment-timezone');
-let secret = require('./secret');
+const request = require('request');
+const momentTZ = require('moment-timezone');
+const secret = require('./secret');
 
-let timezone = {};
+const timezone = {};
 module.exports = timezone;
 
-timezone.getOffset = function(tzIdent) {
+timezone.getOffset = (tzIdent) => {
     let now = new Date();
     return momentTZ.tz.zone(tzIdent).utcOffset(now);
 };
 
-timezone.googleGetTZidentifier = function (location, callback) {
+timezone.googleGetTZidentifier = (location, callback) => {
     let options = {
         uri: 'https://maps.googleapis.com/maps/api/timezone/json',
         method: 'GET',
@@ -21,10 +21,10 @@ timezone.googleGetTZidentifier = function (location, callback) {
         }
     };
 
-    request(options, function (err, res, body) {
+    request(options, (err, res, body) => {
         if (!err && res.statusCode === 200) {
             let parsedBody = JSON.parse(body);
-            return callback(parsedBody.timeZoneId)
+            callback(parsedBody.timeZoneId)
         } else {
             console.log("error: " + err);
         }

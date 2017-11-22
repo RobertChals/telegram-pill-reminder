@@ -1,12 +1,12 @@
-let mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
-let mongo = {};
+const mongo = {};
 module.exports = mongo;
 
 // mongodb setup
 let mongoURL = 'mongodb://localhost/pilldb';
 mongoose.Promise = global.Promise;
-mongoose.connect(mongoURL);
+mongoose.connect(mongoURL, {useMongoClient: true});
 
 let db = mongoose.connection;
 
