@@ -1,6 +1,4 @@
-# Telegram Pill Reminder
-
-## Overview 
+# Telegram Pill Reminder 
 
 This is a Telegram bot using Node.js for reminding its users to take a pill at a desired time.
 
